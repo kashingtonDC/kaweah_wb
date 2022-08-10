@@ -765,22 +765,22 @@ def load_data():
 	data['modis_pet'] = [ee.ImageCollection('MODIS/006/MOD16A2'), "PET", 0.1, 1000]
 
 	# https://developers.google.com/earth-engine/datasets/catalog/NASA_GLDAS_V021_NOAH_G025_T3H
-	data['gldas_aet'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), 'Evap_tavg', 86400*30 / 240 , 27830]   # kg/m2/s --> km3 / mon , noting 3 hrly images
-	data['gldas_pet'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), 'PotEvap_tavg', 1 / 240, 27830] 
+	data['gldas_aet'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), 'Evap_tavg', 86400*30 / 240 , 25000]   # kg/m2/s --> km3 / mon , noting 3 hrly images
+	data['gldas_pet'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), 'PotEvap_tavg', 1 / 240, 25000] 
 
 	# https://developers.google.com/earth-engine/datasets/catalog/NASA_NLDAS_FORA0125_H002
-	data['nldas_pet'] = [ee.ImageCollection('NASA/NLDAS/FORA0125_H002'), 'potential_evaporation', 1, 13915]
+	data['nldas_pet'] = [ee.ImageCollection('NASA/NLDAS/FORA0125_H002'), 'potential_evaporation', 1, 12500]
 
 	# https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_TERRACLIMATE
-	data['tc_aet'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "aet", 0.1 , 4638.3]
-	data['tc_pet'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "pet", 0.1, 4638.3]
+	data['tc_aet'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "aet", 0.1 , 1000]
+	data['tc_pet'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "pet", 0.1, 1000]
 
 	# https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_GRIDMET
 	data['gmet_etr'] = [ee.ImageCollection('IDAHO_EPSCOR/GRIDMET'), "etr", 1 , 1000]
 	data['gmet_eto'] = [ee.ImageCollection('IDAHO_EPSCOR/GRIDMET'), "eto", 1, 1000]
 
 	# https://developers.google.com/earth-engine/datasets/catalog/NASA_FLDAS_NOAH01_C_GL_M_V001
-	data['fldas_aet'] = [ee.ImageCollection('NASA/FLDAS/NOAH01/C/GL/M/V001'), "Evap_tavg", 86400*30, 11132]
+	data['fldas_aet'] = [ee.ImageCollection('NASA/FLDAS/NOAH01/C/GL/M/V001'), "Evap_tavg", 86400*30, 12500]
 
 	###################
 	##### P data ######
@@ -789,55 +789,51 @@ def load_data():
 	data['trmm']  =  [ee.ImageCollection('TRMM/3B43V7'), "precipitation", 720, 25000] # scale hours per month
 	data['prism'] = [ee.ImageCollection("OREGONSTATE/PRISM/AN81m"), "ppt", 1, 4000]
 	data['chirps'] = [ee.ImageCollection('UCSB-CHG/CHIRPS/PENTAD'), "precipitation", 1, 5500]
-	data['persiann'] = [ee.ImageCollection("NOAA/PERSIANN-CDR"), "precipitation", 1, 27830]
+	data['persiann'] = [ee.ImageCollection("NOAA/PERSIANN-CDR"), "precipitation", 1, 25000]
 	data['dmet'] = [ee.ImageCollection('NASA/ORNL/DAYMET_V4'), "prcp", 1, 4000]
 	data['gpm'] = [ee.ImageCollection("NASA/GPM_L3/IMERG_MONTHLY_V06"), "precipitation", 720, 12500] # scale hours per month
 
 	#################### 
 	##### SWE data #####
 	####################
-	data['fldas_swe'] = [ee.ImageCollection('NASA/FLDAS/NOAH01/C/GL/M/V001'), "SWE_inst", 1 , 11132]
-	data['gldas_swe'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "SWE_inst", 1 , 27830]
+	data['fldas_swe'] = [ee.ImageCollection('NASA/FLDAS/NOAH01/C/GL/M/V001'), "SWE_inst", 1 , 12500]
+	data['gldas_swe'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "SWE_inst", 1 , 25000]
 	data['dmet_swe'] = [ee.ImageCollection('NASA/ORNL/DAYMET_V4'), "swe", 1, 4000] # Reduced from 1000 because the query times out over the whole CVW 
-	data['tc_swe'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "swe", 1, 4638.3]
+	data['tc_swe'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "swe", 1, 4000]
 
 	####################
 	##### R data #######
 	####################
-	# TC
-	data['tc_r'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "ro", 1, 4638.3]
-
-	# ERA
-	data['era_r'] = [ee.ImageCollection('') , 'runoff',1 , 11132]
+	data['tc_r'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "ro", 1, 4000]
 	
 	# FlDAS
-	data['fldas_ssr'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "Qs_tavg", 86400*30, 11132] # kg/m2/s --> km3 / mon
-	data['fldas_bfr'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "Qsb_tavg", 86400*30, 11132]
+	data['fldas_ssr'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "Qs_tavg", 86400*30, 12500] # kg/m2/s --> km3 / mon
+	data['fldas_bfr'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "Qsb_tavg", 86400*30, 12500]
 
 	# GLDAS
-	data['gldas_ssr'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "Qs_acc", 1, 27830]
-	data['gldas_bfr'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "Qsb_acc", 1, 27830 ]
-	data['gldas_qsm'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "Qsm_acc", 1, 27830]
+	data['gldas_ssr'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "Qs_acc", 1, 25000]
+	data['gldas_bfr'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "Qsb_acc", 1, 25000 ]
+	data['gldas_qsm'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "Qsm_acc", 1, 25000]
 
 	# ECMWF
-	data['ecmwf_r'] = [ee.ImageCollection("ECMWF/ERA5_LAND/MONTHLY") , 'runoff', 1, 11132]
+	data['ecmwf_r'] = [ee.ImageCollection("ECMWF/ERA5_LAND/MONTHLY") , 'runoff', 1e5, 11132]
 	
 	#####################
 	##### SM data #######
 	#####################
-	data['tc_sm'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "soil", 0.1, 4638.3]
+	data['tc_sm'] = [ee.ImageCollection('IDAHO_EPSCOR/TERRACLIMATE'), "soil", 0.1, 4000]
 
-	data['fsm1'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi00_10cm_tavg", 86400*24 , 11132]
-	data['fsm2'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi10_40cm_tavg", 86400*24 , 11132]
-	data['fsm3'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi40_100cm_tavg", 86400*24 , 11132]
-	data['fsm4'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi100_200cm_tavg", 86400*24 , 11132]
+	data['fsm1'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi00_10cm_tavg", 86400*24 , 12500]
+	data['fsm2'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi10_40cm_tavg", 86400*24 , 12500]
+	data['fsm3'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi40_100cm_tavg", 86400*24 , 12500]
+	data['fsm4'] = [ee.ImageCollection("NASA/FLDAS/NOAH01/C/GL/M/V001"), "SoilMoi100_200cm_tavg", 86400*24 , 12500]
 
-	data['gldas_rzsm'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "RootMoist_inst", 1, 27830]
+	data['gldas_rzsm'] = [ee.ImageCollection('NASA/GLDAS/V021/NOAH/G025/T3H'), "RootMoist_inst", 1, 25000]
 
-	data['gsm1'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi0_10cm_inst", 1 ,27830]
-	data['gsm2'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi10_40cm_inst", 1 ,27830]
-	data['gsm3'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi40_100cm_inst", 1 ,27830]
-	data['gsm4'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi100_200cm_inst", 1 ,27830]
+	data['gsm1'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi0_10cm_inst", 1 ,25000]
+	data['gsm2'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi10_40cm_inst", 1 ,25000]
+	data['gsm3'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi40_100cm_inst", 1 ,25000]
+	data['gsm4'] = [ee.ImageCollection("NASA/GLDAS/V021/NOAH/G025/T3H"), "SoilMoi100_200cm_inst", 1 ,25000]
 
 	data['smap_ssm'] = [ee.ImageCollection("NASA_USDA/HSL/SMAP10KM_soil_moisture") , "ssm", 1 ,10000]
 	data['smap_susm'] = [ee.ImageCollection("NASA_USDA/HSL/SMAP10KM_soil_moisture"), "susm", 1 ,10000]

@@ -18,154 +18,176 @@ from sklearn import preprocessing
 
 from tqdm import tqdm_notebook as tqdm
 
-ee.Initialize()
+def main():
 
-# Load shapefile 
-shp = gp.read_file('../shape/study_area/c2vsim_sub_18.shp')
+    ee.Initialize()
 
-# Make EE objects from shapefiles 
-area = rs.gdf_to_ee_poly(shp)
+    # Load shapefile 
+    shp = gp.read_file('../shape/study_area/c2vsim_sub_18.shp')
 
-# Load Small watersheds shapefile, dissolve, and simplify it slightly 
-sw_shp = gp.read_file('../shape/study_area/small_sheds.shp').dissolve().explode()
-sw_area = rs.gdf_to_ee_poly(sw_shp)
+    # Make EE objects from shapefiles 
+    area = rs.gdf_to_ee_poly(shp)
 
-# Load RS data dict from rsfuncs.py
-data = rs.load_data()
+    # Load Small watersheds shapefile, dissolve, and simplify it slightly 
+    sw_shp = gp.read_file('../shape/study_area/small_sheds.shp').dissolve().explode()
+    sw_area = rs.gdf_to_ee_poly(sw_shp)
 
-# Set start/end
-strstart = '2001-01-01'
-strend = '2021-08-31'
+    ro_gdf = gp.GeoDataFrame(pd.concat([shp, sw_shp])).dissolve().explode()
+    ro_area = rs.gdf_to_ee_poly(ro_gdf)
 
-startdate = datetime.datetime.strptime(strstart, "%Y-%m-%d")
-enddate = datetime.datetime.strptime(strend, "%Y-%m-%d")
+    # Load RS data dict from rsfuncs.py
+    data = rs.load_data()
 
-print("-------" * 10)
-print("Processing Runoff Data")
-print("-------" * 10)
+    # Set start/end
+    strstart = '2001-09-01'
+    strend = '2021-09-30'
 
-# R
-tc_r = rs.calc_monthly_sum(data['tc_r'], startdate, enddate, area)
-ecmwf_r = rs.calc_monthly_sum(data['ecmwf_r'], startdate, enddate, area)
-ecmwf_r = rs.calc_monthly_sum(data['ecmwf_r'], startdate, enddate, area)
+    startdate = datetime.datetime.strptime(strstart, "%Y-%m-%d")
+    enddate = datetime.datetime.strptime(strend, "%Y-%m-%d")
 
-fldas_ssr = rs.calc_monthly_sum(data['fldas_ssr'], startdate, enddate, area)
-fldas_bfr = rs.calc_monthly_sum(data['fldas_bfr'], startdate, enddate, area)
+    # Setup outdir 
+    outdir = "../data/wb_variables"
 
-gldas_ssr = rs.calc_monthly_sum(data['gldas_ssr'], startdate, enddate, area)
-gldas_bfr = rs.calc_monthly_sum(data['gldas_bfr'], startdate, enddate, area)
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
 
-# Sum the base flow and surface runoff 
-gldas_r = pd.DataFrame(pd.concat([gldas_bfr, gldas_ssr], axis = 1).sum(axis =1))
-gldas_r.columns = ['gldas_r']
-fldas_r = pd.DataFrame(pd.concat([fldas_bfr, fldas_ssr], axis = 1).sum(axis =1))
-fldas_r.columns = ['fldas_r']
+    p_outfn = os.path.join(outdir,"precip.csv")
+    r_outfn = os.path.join(outdir,"runoff.csv")
+    et_outfn = os.path.join(outdir,"et.csv")
+    sm_outfn = os.path.join(outdir,"sm.csv")
 
+    # Process variables 
+    print("-------" * 10)
+    print("Processing Runoff Data")
+    print("-------" * 10)
 
-# SWe
-print("-------" * 10)
-print("Processing SWE Data")
-print("-------" * 10)
+    # R
+    tc_r = rs.calc_monthly_sum(data['tc_r'], startdate, enddate, ro_area)
+    ecmwf_r = rs.calc_monthly_sum(data['ecmwf_r'], startdate, enddate, ro_area)
 
-gldas_swe = rs.calc_monthly_mean(data['gldas_swe'], startdate, enddate, area)
-fldas_swe = rs.calc_monthly_mean(data['fldas_swe'],startdate, enddate, area)
-dmet_swe = rs.calc_monthly_mean(data['dmet_swe'],startdate, enddate, area)
-tc_swe = rs.calc_monthly_mean(data['tc_swe'],startdate, enddate, area)
+    fldas_ssr = rs.calc_monthly_sum(data['fldas_ssr'], startdate, enddate, ro_area)
+    fldas_bfr = rs.calc_monthly_sum(data['fldas_bfr'], startdate, enddate, ro_area)
 
-# SM
-print("-------" * 10)
-print("Processing Soil Moisture Data")
-print("-------" * 10)
+    gldas_ssr = rs.calc_monthly_sum(data['gldas_ssr'], startdate, enddate, ro_area)
+    gldas_bfr = rs.calc_monthly_sum(data['gldas_bfr'], startdate, enddate, ro_area)
 
-# Smos
-smos_ssm = rs.calc_monthly_mean(data['smos_ssm'], "2010-01-01", "2019-12-31", area)
-smos_susm = rs.calc_monthly_mean(data['smos_susm'],"2010-01-01", "2019-12-31", area)
-smos_smp = rs.calc_monthly_mean(data['smos_smp'],"2010-01-01", "2019-12-31", area)
-smos_sm = pd.concat([smos_ssm, smos_susm], axis = 1).sum(axis =1)
+    # Sum the base flow and surface runoff 
+    gldas_r = pd.DataFrame(pd.concat([gldas_bfr, gldas_ssr], axis = 1).sum(axis =1))
+    gldas_r.columns = ['gldas_r']
+    fldas_r = pd.DataFrame(pd.concat([fldas_bfr, fldas_ssr], axis = 1).sum(axis =1))
+    fldas_r.columns = ['fldas_r']
 
-# SMAP
-smap_ssm = rs.calc_monthly_mean(data['smap_ssm'], '2015-04-01', enddate, area)
-smap_susm = rs.calc_monthly_mean(data['smap_susm'],'2015-04-01', enddate, area)
-smap_smp = rs.calc_monthly_mean(data['smap_smp'],'2015-04-01', enddate, area)
+    # compile, write 
+    rdfs = {"r_tc": tc_r, "r_gldas": gldas_r, "r_fldas": fldas_r, "r_ecmwf": ecmwf_r}
+    r_df_out = pd.concat(list(rdfs.values()), axis = 1)
+    r_df_out.columns = list(rdfs.keys())
+    r_df_out.to_csv(r_outfn)
 
-# TC
-tc_sm = rs.calc_monthly_mean(data['tc_sm'], startdate, enddate, area)
+    # SM
+    print("-------" * 10)
+    print("Processing Soil Moisture Data")
+    print("-------" * 10)
 
-# GLDAS
-gldas_rzsm = rs.calc_monthly_mean(data['gldas_rzsm'], startdate, enddate, area)
-gldas_gsm1 = rs.calc_monthly_mean(data['gsm1'], startdate, enddate, area)
-gldas_gsm2 = rs.calc_monthly_mean(data['gsm2'], startdate, enddate, area)
-gldas_gsm3 = rs.calc_monthly_mean(data['gsm3'], startdate, enddate, area)
-gldas_gsm4 = rs.calc_monthly_mean(data['gsm4'], startdate, enddate, area)
-gldas_sm = pd.concat([gldas_gsm1,gldas_gsm2,gldas_gsm3,gldas_gsm4], axis = 1).sum(axis =1)
+    # Smos
+    smos_ssm = rs.calc_monthly_mean(data['smos_ssm'], "2010-01-01", "2019-12-31", area)
+    smos_susm = rs.calc_monthly_mean(data['smos_susm'],"2010-01-01", "2019-12-31", area)
+    smos_smp = rs.calc_monthly_mean(data['smos_smp'],"2010-01-01", "2019-12-31", area)
+    smos_sm = pd.concat([smos_ssm, smos_susm], axis = 1).sum(axis =1)
 
-# FLDAS 
-fldas_fsm1 = rs.calc_monthly_mean(data['fsm1'], startdate, enddate, area)
-fldas_fsm2 = rs.calc_monthly_mean(data['fsm2'], startdate, enddate, area)
-fldas_fsm3 = rs.calc_monthly_mean(data['fsm3'], startdate, enddate, area)
-fldas_fsm4 = rs.calc_monthly_mean(data['fsm4'], startdate, enddate, area)
+    # SMAP
+    smap_ssm = rs.calc_monthly_mean(data['smap_ssm'], '2015-04-01', enddate, area)
+    smap_susm = rs.calc_monthly_mean(data['smap_susm'],'2015-04-01', enddate, area)
+    smap_smp = rs.calc_monthly_mean(data['smap_smp'],'2015-04-01', enddate, area)
 
+    # TC
+    tc_sm = rs.calc_monthly_mean(data['tc_sm'], startdate, enddate, area)
 
-# Combine SM
-gldas_sm = pd.DataFrame(pd.concat([gldas_gsm1,gldas_gsm2,gldas_gsm3,gldas_gsm4], axis = 1).sum(axis =1))
-gldas_sm.columns = ['gldas_sm']
-fldas_sm = pd.concat([fldas_fsm1,fldas_fsm2,fldas_fsm3,fldas_fsm4], axis = 1).sum(axis =1)
-fldas_sm.columns = ['fldas_sm']
-smap_sm = pd.DataFrame(pd.concat([smap_ssm, smap_susm], axis = 1).sum(axis =1))
-smap_sm.columns = ['smap_sm']
-smos_sm = pd.DataFrame(pd.concat([smos_ssm, smos_susm], axis = 1).sum(axis =1))
-smos_sm.columns = ['smos_sm']
+    # GLDAS
+    # gldas_rzsm = rs.calc_monthly_mean(data['gldas_rzsm'], startdate, enddate, area)
+    gldas_gsm1 = rs.calc_monthly_mean(data['gsm1'], startdate, enddate, area)
+    gldas_gsm2 = rs.calc_monthly_mean(data['gsm2'], startdate, enddate, area)
+    gldas_gsm3 = rs.calc_monthly_mean(data['gsm3'], startdate, enddate, area)
+    gldas_gsm4 = rs.calc_monthly_mean(data['gsm4'], startdate, enddate, area)
+    gldas_sm = pd.concat([gldas_gsm1,gldas_gsm2,gldas_gsm3,gldas_gsm4], axis = 1).sum(axis =1)
 
-print("-------" * 10)
-print("Processing Precip Data")
-print("-------" * 10)
+    # FLDAS 
+    fldas_fsm1 = rs.calc_monthly_mean(data['fsm1'], startdate, enddate, area)
+    fldas_fsm2 = rs.calc_monthly_mean(data['fsm2'], startdate, enddate, area)
+    fldas_fsm3 = rs.calc_monthly_mean(data['fsm3'], startdate, enddate, area)
+    fldas_fsm4 = rs.calc_monthly_mean(data['fsm4'], startdate, enddate, area)
 
-# Precip
-gpm = rs.calc_monthly_sum(data['gpm'], startdate, enddate, area)
-prism = rs.calc_monthly_sum(data['prism'], startdate, enddate, area)
-dmet = rs.calc_monthly_sum(data['dmet'], startdate, enddate, area)
-chirps = rs.calc_monthly_sum(data['chirps'], startdate, enddate, area)
-psn = rs.calc_monthly_sum(data['persiann'], startdate, enddate, area)
+    # Combine SM
+    gldas_sm = pd.DataFrame(pd.concat([gldas_gsm1,gldas_gsm2,gldas_gsm3,gldas_gsm4], axis = 1).sum(axis =1))
+    gldas_sm.columns = ['gldas_sm']
+    fldas_sm = pd.concat([fldas_fsm1,fldas_fsm2,fldas_fsm3,fldas_fsm4], axis = 1).sum(axis =1)
+    fldas_sm.columns = ['fldas_sm']
+    smap_sm = pd.DataFrame(pd.concat([smap_ssm, smap_susm], axis = 1).sum(axis =1))
+    smap_sm.columns = ['smap_sm']
+    smos_sm = pd.DataFrame(pd.concat([smos_ssm, smos_susm], axis = 1).sum(axis =1))
+    smos_sm.columns = ['smos_sm']
 
-print("-------" * 10)
-print("Processing AET Data")
-print("-------" * 10)
+    # compile, write 
+    smdfs = {"sm_smos": smos_sm, "sm_smap": smap_sm, "sm_tc": tc_sm, "sm_gldas": gldas_sm, "sm_fldas":fldas_sm}
+    sm_df_out = pd.concat(list(smdfs.values()), axis = 1)
+    sm_df_out.columns = list(smdfs.keys())
+    sm_df_out.to_csv(sm_outfn)
 
-# Aet
-modis_aet = rs.calc_monthly_sum(data['modis_aet'], startdate, enddate, area)
-gldas_aet = rs.calc_monthly_sum(data['gldas_aet'], startdate, enddate, area)
-tc_aet = rs.calc_monthly_sum(data['tc_aet'], startdate, enddate, area)
-fldas_aet = rs.calc_monthly_sum(data['fldas_aet'], startdate, enddate, area)
+    print("-------" * 10)
+    print("Processing Precip Data")
+    print("-------" * 10)
 
-print("-------" * 10)
-print("Processing PET Data")
-print("-------" * 10)
+    # Precip
+    gpm = rs.calc_monthly_sum(data['gpm'], startdate, enddate, area)
+    prism = rs.calc_monthly_sum(data['prism'], startdate, enddate, area)
+    dmet = rs.calc_monthly_sum(data['dmet'], startdate, enddate, area)
+    chirps = rs.calc_monthly_sum(data['chirps'], startdate, enddate, area)
+    psn = rs.calc_monthly_sum(data['persiann'], startdate, enddate, area)
 
-# PET
-gldas_pet = rs.calc_monthly_sum(data['gldas_pet'], startdate, enddate, area)
-modis_pet = rs.calc_monthly_sum(data['modis_pet'], startdate, enddate, area)
-nldas_pet = rs.calc_monthly_sum(data['nldas_pet'], startdate, enddate, area)
-tc_pet = rs.calc_monthly_sum(data['tc_pet'], startdate, enddate, area)
-gmet_eto = rs.calc_monthly_sum(data['gmet_eto'], startdate, enddate, area)
+    # compile, write 
+    pdfs = {"p_prism":prism, "p_gpm":gpm,"p_dmet":dmet, "p_chirps": chirps, "p_psn":psn}
+    p_df_out = pd.concat(list(pdfs.values()), axis = 1)
+    p_df_out.columns = list(pdfs.keys())
+    p_df_out.to_csv(p_outfn)
 
+    print("-------" * 10)
+    print("Processing AET Data")
+    print("-------" * 10)
 
-# Process the dataframes 
-pdfs = {"p_prism":prism, "p_gpm":gpm,"p_dmet":dmet, "p_chirps": chirps, "p_psn":psn}
-aetdfs = {"aet_modis":modis_aet, "aet_gldas":gldas_aet, "aet_tc":tc_aet, "aet_fldas":fldas_aet }
-petdfs = {"pet_modis":modis_pet, "pet_gldas":gldas_pet, "pet_tc":tc_pet, "pet_nldas":nldas_pet, 'pet_gmet':gmet_eto }
-smdfs = {"sm_smos": smos_sm, "sm_smap": smap_sm, "sm_tc": tc_sm, "sm_gldas": gldas_sm}
-rdfs = {"r_tc": tc_r, "r_gldas": gldas_r, "r_fldas": fldas_r, "r_ecmwf": ecmwf_r}
-swedfs = {'swe_gldas': gldas_swe, 'swe_fldas': fldas_swe, 'swe_dmet':dmet_swe, "swe_tc":tc_swe}
+    # Aet
+    modis_aet = rs.calc_monthly_sum(data['modis_aet'], startdate, enddate, area)
+    gldas_aet = rs.calc_monthly_sum(data['gldas_aet'], startdate, enddate, area)
+    tc_aet = rs.calc_monthly_sum(data['tc_aet'], startdate, enddate, area)
+    fldas_aet = rs.calc_monthly_sum(data['fldas_aet'], startdate, enddate, area)
 
-master_df = []
+    aetdfs = {"aet_modis":modis_aet, "aet_gldas":gldas_aet, "aet_tc":tc_aet, "aet_fldas":fldas_aet }
+    et_df_out = pd.concat(list(aetdfs.values()), axis = 1)
+    et_df_out.columns = list(aetdfs.keys())
+    et_df_out.to_csv(et_outfn)
 
-for i in [pdfs, aetdfs, petdfs, smdfs, rdfs, swedfs]:
-    for k,v in i.items():
-        # print(k,v.columns)
-        newdf = v
-        newdf.columns = [k]
-        master_df.append(newdf)
+    # print("-------" * 10)
+    # print("Processing PET Data")
+    # print("-------" * 10)
 
-finout = pd.concat(master_df, axis = 1).astype(float)
+    # PET
+    # gldas_pet = rs.calc_monthly_sum(data['gldas_pet'], startdate, enddate, area)
+    # modis_pet = rs.calc_monthly_sum(data['modis_pet'], startdate, enddate, area)
+    # nldas_pet = rs.calc_monthly_sum(data['nldas_pet'], startdate, enddate, area)
+    # tc_pet = rs.calc_monthly_sum(data['tc_pet'], startdate, enddate, area)
+    # gmet_eto = rs.calc_monthly_sum(data['gmet_eto'], startdate, enddate, area)
 
-finout.to_csv('../data/RS_analysis_dat.csv')
+    # SWe
+    # print("-------" * 10)
+    # print("Processing SWE Data")
+    # print("-------" * 10)
+
+    # gldas_swe = rs.calc_monthly_mean(data['gldas_swe'], startdate, enddate, area)
+    # fldas_swe = rs.calc_monthly_mean(data['fldas_swe'],startdate, enddate, area)
+    # dmet_swe = rs.calc_monthly_mean(data['dmet_swe'],startdate, enddate, area)
+    # tc_swe = rs.calc_monthly_mean(data['tc_swe'],startdate, enddate, area)
+    print("*" * 100)
+    print("COMPLETED")
+    print("*" * 100)
+    return
+
+if __name__ == "__main__":
+    main()
