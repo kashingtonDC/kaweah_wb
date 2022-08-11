@@ -83,6 +83,8 @@ def main():
     r_df_out.columns = list(rdfs.keys())
     r_df_out.to_csv(r_outfn)
 
+    return
+
     # SM
     print("-------" * 10)
     print("Processing Soil Moisture Data")
